@@ -11,6 +11,7 @@ function Usuario() {
   //Hooks de Usuario
  const [id, setId] = useState("");/*este id es id_usuarios */
  const [personas, setPersonas] = useState([]);
+  const [personasSinUsuario, setPersonasSinUsuario] = useState([]);
  const [idPersona, setIdPersona] = useState("");
  const [idRol, setIdRol] = useState(""); 
  const [idEstado, setIdEstado] = useState(""); 
@@ -24,24 +25,11 @@ function Usuario() {
  const [roles, setRoles] = useState([]);
  const [estados, setEstados] = useState([]);
 
- 
-
-/*
- useEffect(() => {
-    // Fetch employees on component mount
-    Axios.get("http://localhost:3001/obtenerpersona")
-        .then((response) => {
-            setPersonas(response.data);
-        })
-        .catch((error) => {
-            console.error("Error fetching employees:", error);
-        });
-}, [])
-*/
-useEffect(() => {
-    const obtenerPersonas = async () => {
+/*Mostrar todos los empleados en la tabla*/
+  useEffect(() => {
+    const obtenerListaPersonas = async () => {
       try {
-        const response = await fetch('http://localhost:3001/obtenerpersona');
+        const response = await fetch('http://localhost:3001/obtenerlistapersonas');
         const data = await response.json();
         setPersonas(data);  // Guarda los datos en tu estado
       } catch (error) {
@@ -49,9 +37,24 @@ useEffect(() => {
       }
     };
   
-    obtenerPersonas();
+    obtenerListaPersonas();
   }, []);
-  
+
+  /*Mostrar todos los empleados sin un usuario asignado en el select al crear un nuevo usuario*/
+
+  const obtenerPersonasSinUsuario = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/obtenerpersona');
+      const data = await response.json();
+      setPersonasSinUsuario(data);  // Guarda los datos en tu estado
+    } catch (error) {
+      console.error('Error al obtener las personas:', error);
+    }
+  };
+  useEffect(() => {
+    obtenerPersonasSinUsuario();
+  }, []);
+
   useEffect(() => {
     const obtenerestado = async () => {
       try {
@@ -81,7 +84,6 @@ useEffect(() => {
   }, []);
   
 
-
 const addUser = () => {
     Axios.post("http://localhost:3001/create-usuario", {
         id_persona: idPersona,
@@ -90,17 +92,27 @@ const addUser = () => {
         username: username,
         password: password
     }).then(() => {
-       getUsuario();
+       listaUsuarios();
+       obtenerPersonasSinUsuario();
         limpiarcampos();
         Swal.fire({
           title: "<strong>Registro exitoso!!!</strong>",
           html: "<i><strong>" +username +"</strong> fue registrado con éxito</i>",
           icon: "success",
           timer: 3000,
-        })
-      });
+        });
+      })
+      .catch((error) => {
+        // Manejo de errores
+        console.error("Error al registrar el usuario:", error.response ? error.response.data : error.message);
+        Swal.fire({
+            title: "<strong>Error al registrar</strong>",
+            html: "<i>" + (error.response?.data?.message || "Ocurrió un error inesperado.") + "</i>",
+            icon: "error",
+            timer: 3000,
+        });
+    });
     };
-
   
   const updateUser = () => {
     console.log("Updating user with ID:", id);
@@ -120,7 +132,7 @@ const addUser = () => {
       username: username,
       password: password,
     }).then(() => {
-        getUsuario()
+        listaUsuarios()
       limpiarcampos();
       Swal.fire({
         title: "<strong>Actualicación exitosa!!!</strong>",
@@ -157,47 +169,13 @@ const addUser = () => {
     setPassword(val.password);
     setId(val.id_usuario)
   }
-  useEffect(() => {
-    // Fetch employees
-    Axios.get("http://localhost:3001/obtenerpersona")
-        .then(response => setPersonas(response.data))
-        .catch(error => console.error("Error fetching employees:", error));
 
-    // Fetch roles
-    Axios.get("http://localhost:3001/obtenerrol")
-        .then(response => setRoles(response.data))
-        .catch(error => console.error("Error fetching roles:", error));
-
-    // Fetch states
-    Axios.get("http://localhost:3001/obtenerestado")
-        .then(response => setEstados(response.data))
-        .catch(error => console.error("Error fetching states:", error));
-
-    // Fetch users
-    getUsuario();
-}, []);
-  const getUsuario = () => {
+  const listaUsuarios = () => {
     Axios.get("http://localhost:3001/obteneruser").then((response) => {
         setusuariolista(response.data);
     });
   };
-  getUsuario();
-  /*
-
-    //Obtener lista de personas 
-    const fetchPersonas = async () => {
-        try {
-            const response = await Axios.get("http://localhost:3001/obtenerPersona");
-            setPersonas(response.data);
-        } catch (error) {
-            console.error("Error al obtener personas:", error);
-        }
-    };
-    
-    useEffect(() => {
-        fetchPersonas(); // Llama a la función al montar el componente
-    }, []);
-    */
+  listaUsuarios();
 
   return (
     <div className="container">
@@ -214,7 +192,7 @@ const addUser = () => {
             </span>
                 <select value={idPersona} onChange={(e) => setIdPersona(e.target.value)}>
                     <option value="">Seleccione un empleado</option>
-                    {personas.map((persona) => (
+                    {personasSinUsuario.map((persona) => (
                         <option  key={persona.id} value={persona.id}>
                             {persona.primer_nombre}
                         </option>

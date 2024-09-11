@@ -122,7 +122,7 @@ function Empleado() {
   };
 
   const getPersona = () => {
-    Axios.get("http://localhost:3001/obtenerpersona").then((response) => {
+    Axios.get("http://localhost:3001/obtenerlistapersonas").then((response) => {
       setpersona(response.data);
     });
   };
