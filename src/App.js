@@ -1,15 +1,13 @@
 // App.js
 import React, { Fragment } from "react";
-import Routes from './Routes';
+import AppRoutes from './AppRoutes';
 
 function App() {
   return (
     <Fragment>
-           
-                <Routes />
-         
+      <AppRoutes />
     </Fragment>
   );
 }
 
-export default App;
+export default App;

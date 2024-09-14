@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Swal from "sweetalert2";
-import { Link } from "react-router-dom"; 
 
 function Empleado() {
   const [id, setId] = useState("");
@@ -19,8 +18,10 @@ function Empleado() {
   const [personalist, setpersona] = useState([]);
 
   const [editar, seteditarpersona] = useState(false);
+  //Paginacion
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3; // Cambia esto según tus necesidades
+  const itemsPerPage = 3; // Numero de Informacion de pag
+  const [searchTerm, setSearchTerm] = useState(""); 
 
 
   const add = () => {
@@ -68,36 +69,38 @@ function Empleado() {
 
   const deletepersona = (val) => {
     Swal.fire({
-      title: "Confirmar Eliminado",
-      html:"<i>¿Esta seguro que desea eliminar a <strong>" +val.primer_nombre +" " +val.primer_apellido +"</strong> ?</i>",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#4CAF50",
-      cancelButtonColor: "#F44336",
-      confirmButtonText: "Si, elimminarlo!",
-      cancelButtonText: "Cancelar",
+        title: "Confirmar Eliminado",
+        html: "<i>¿Está seguro que desea eliminar a <strong>" + val.primer_nombre + " " + val.primer_apellido + "</strong> ?</i>",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#4CAF50",
+        cancelButtonColor: "#F44336",
+        confirmButtonText: "Sí, eliminarlo!",
+        cancelButtonText: "Cancelar",
     }).then((result) => {
-      if (result.isConfirmed) {
-        Axios.delete(`http://localhost:3001/delete/${val.id}`).then(() => {
-          getPersona();
-          limpiarcampos();
-          Swal.fire({
-            title: "Eliminado!",
-            html:"<strong>" +val.primer_nombre +" " +val.primer_apellido +"</strong> Fuel eliminado",
-            icon: "success",
-            timer: 2000,
-          });
-        }).catch(function(error){
-          Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            html:"No se logro eliminar a <strong>" +val.primer_nombre +" " +val.primer_apellido +"</strong>",
-            footer: JSON.parse(JSON.stringify(error)).message==="Network Error"?"Intente más tarde":JSON.parse(JSON.stringify(error)).message
-          });
-        });
-      }
+        if (result.isConfirmed) {
+            Axios.delete(`http://localhost:3001/delete/${val.id}`).then(() => {
+                getPersona();
+                limpiarcampos();
+                Swal.fire({
+                    title: "Eliminado!",
+                    html: "<strong>" + val.primer_nombre + " " + val.primer_apellido + "</strong> fue eliminado",
+                    icon: "success",
+                    timer: 2000,
+                });
+            }).catch(function (error) {
+                const errorMessage = error.response?.data?.message || "No se logró eliminar a <strong>" + val.primer_nombre + " " + val.primer_apellido + "</strong>";
+                Swal.fire({
+                    icon: "error",
+                    title: "Oops...",
+                    html: errorMessage,
+                    footer: error.message === "Network Error" ? "Intente más tarde" : error.message
+                });
+            });
+        }
     });
-  };
+};
+
 
   const limpiarcampos = () => {
     setprimerNombre("");
@@ -136,27 +139,31 @@ function Empleado() {
     getPersona();
   }, []);
 
-  // Calcular los índices de los elementos a mostrar
+      // Filtrar la lista de empleados
+      const filteredPersonalist = personalist.filter((persona) => {
+        return (
+            persona.primer_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            persona.segundo_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            persona.primer_apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            persona.segundo_apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            persona.telefono.includes(searchTerm) ||
+            persona.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    });
+
+  // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = personalist.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filteredPersonalist.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredPersonalist.length / itemsPerPage);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
 
-  // Cambiar de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Calcular el número total de páginas
-  const pageNumbers = [];
-  for (let i = 1; i <= Math.ceil(personalist.length / itemsPerPage); i++) {
-    pageNumbers.push(i);
-  }
+
 
   return (
     <div className="container">
- 
-      <Link to="/home" >
-                Volver a Home
-            </Link>
-      {/*Aqui va la pagina web o el login */}
       <div className="card text-center">
         <div className="card-header">FORMULARIO DE EMPLEADOS</div>
         <div className="card-body">
@@ -243,16 +250,16 @@ function Empleado() {
           </div>
           <div className="input-group mb-3">
             <span className="input-group-text" id="basic-addon1">
-              Email:{" "}
+            Direccion:{" "}
             </span>
             <input
-              type="email"
+              type="text"
               onChange={(event) => {
                 setemail(event.target.value);
               }}
               value={email}
               className="form-control"
-              placeholder="Ingrese su email"
+              placeholder="Ingrese su Direccion"
               aria-label="Username"
               aria-describedby="basic-addon1"
             />
@@ -275,6 +282,13 @@ function Empleado() {
           )}
         </div>
       </div>
+      <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control mb-3"
+            />
       <table className="table table-striped">
         <thead>
           <tr>

@@ -7,81 +7,76 @@ import Swal from "sweetalert2";
 
 function Usuario() {
  //Autorizado
-  //Hooks de Usuario
- const [id, setId] = useState("");/*este id es id_usuarios */
- const [personas, setPersonas] = useState([]);
- const [personasSinUsuario, setPersonasSinUsuario] = useState([]);
- const [idPersona, setIdPersona] = useState("");
- const [idRol, setIdRol] = useState(""); 
- const [idEstado, setIdEstado] = useState(""); 
- const [username, setUsername] = useState("");
- const [password, setPassword] = useState("");
+//Hooks de Usuario
+const [id, setId] = useState("");/*este id es id_usuarios */
+const [personas, setPersonas] = useState([]);
+const [idPersona, setIdPersona] = useState("");
+const [idRol, setIdRol] = useState(""); 
+const [idEstado, setIdEstado] = useState(""); 
+const [username, setUsername] = useState("");
+const [password, setPassword] = useState("");
 
- const [usuariolista, setusuariolista] = useState([]);
- const [editarUser, seteditarUser] = useState(false);
+const [usuariolista, setusuariolista] = useState([]);
+const [editarUser, seteditarUser] = useState(false);
 
 
- const [roles, setRoles] = useState([]);
- const [estados, setEstados] = useState([]);
+const [roles, setRoles] = useState([]);
+const [estados, setEstados] = useState([]);
 
-/*Mostrar todos los empleados en la tabla*/
-  useEffect(() => {
-    const obtenerListaPersonas = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/obtenerlistapersonas');
-        const data = await response.json();
-        setPersonas(data);  // Guarda los datos en tu estado
-      } catch (error) {
-        console.error('Error al obtener las personas:', error);
-      }
-    };
-  
-    obtenerListaPersonas();
-  }, []);
 
-  /*Mostrar todos los empleados sin un usuario asignado en el select al crear un nuevo usuario*/
+//PAGINACION y BUSQUEDA
+const [currentPage, setCurrentPage] = useState(1);
+const [searchTerm, setSearchTerm] = useState(""); 
+const itemsPerPage = 4; // numero de datos que se muestran
 
-  const obtenerPersonasSinUsuario = async () => {
-    try {
+useEffect(() => {
+  obtenerPersonas();
+  obtenerEstado();
+  obtenerRol();
+}, []);
+
+useEffect(() => {
+    // Fetch employees on component mount
+    Axios.get("http://localhost:3001/obtenerpersona")
+        .then((response) => {
+            setPersonas(response.data);
+        })
+        .catch((error) => {
+            console.error("Error fetching employees:", error);
+        });
+}, [])
+
+const obtenerPersonas = async () => {
+  try {
       const response = await fetch('http://localhost:3001/obtenerpersona');
       const data = await response.json();
-      setPersonasSinUsuario(data);  // Guarda los datos en tu estado
-    } catch (error) {
+      setPersonas(data);
+  } catch (error) {
       console.error('Error al obtener las personas:', error);
-    }
-  };
-  useEffect(() => {
-    obtenerPersonasSinUsuario();
-  }, []);
+  }
+};
+  
+const obtenerEstado = async () => {
+  try {
+      const response = await fetch('http://localhost:3001/obtenerestado');
+      const data = await response.json();
+      setEstados(data);
+  } catch (error) {
+      console.error('Error al obtener los estados:', error);
+  }
+};
 
-  useEffect(() => {
-    const obtenerestado = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/obtenerestado');
-        const data = await response.json();
-        setEstados(data);  // Guarda los datos en tu estado
-      } catch (error) {
-        console.error('Error al obtener las Estados:', error);
-      }
-    };
+const obtenerRol = async () => {
+  try {
+      const response = await fetch('http://localhost:3001/obtenerrol');
+      const data = await response.json();
+      setRoles(data);
+  } catch (error) {
+      console.error('Error al obtener roles:', error);
+  }
+};
   
-    obtenerestado();
-  }, []);
 
-  useEffect(() => {
-    const obtenerrol = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/obtenerrol');
-        const data = await response.json();
-        setRoles(data);  // Guarda los datos en tu estado
-      } catch (error) {
-        console.error('Error al obtener roles:', error);
-      }
-    };
-  
-    obtenerrol();
-  }, []);
-  
 
 const addUser = () => {
     Axios.post("http://localhost:3001/create-usuario", {
@@ -91,27 +86,17 @@ const addUser = () => {
         username: username,
         password: password
     }).then(() => {
-       listaUsuarios();
-       obtenerPersonasSinUsuario();
+      getUsuario();
         limpiarcampos();
         Swal.fire({
           title: "<strong>Registro exitoso!!!</strong>",
           html: "<i><strong>" +username +"</strong> fue registrado con éxito</i>",
           icon: "success",
           timer: 3000,
-        });
-      })
-      .catch((error) => {
-        // Manejo de errores
-        console.error("Error al registrar el usuario:", error.response ? error.response.data : error.message);
-        Swal.fire({
-            title: "<strong>Error al registrar</strong>",
-            html: "<i>" + (error.response?.data?.message || "Ocurrió un error inesperado.") + "</i>",
-            icon: "error",
-            timer: 3000,
-        });
-    });
+        })
+      });
     };
+
   
   const updateUser = () => {
     console.log("Updating user with ID:", id);
@@ -131,7 +116,7 @@ const addUser = () => {
       username: username,
       password: password,
     }).then(() => {
-        listaUsuarios()
+        getUsuario()
       limpiarcampos();
       Swal.fire({
         title: "<strong>Actualicación exitosa!!!</strong>",
@@ -168,16 +153,76 @@ const addUser = () => {
     setPassword(val.password);
     setId(val.id_usuario)
   }
+  
+  useEffect(() => {
+    // Fetch employees
+    Axios.get("http://localhost:3001/obtenerpersona")
+        .then(response => setPersonas(response.data))
+        .catch(error => console.error("Error fetching employees:", error));
 
-  const listaUsuarios = () => {
+    // Fetch roles
+    Axios.get("http://localhost:3001/obtenerrol")
+        .then(response => setRoles(response.data))
+        .catch(error => console.error("Error fetching roles:", error));
+
+    // Fetch states
+    Axios.get("http://localhost:3001/obtenerestado")
+        .then(response => setEstados(response.data))
+        .catch(error => console.error("Error fetching states:", error));
+
+    // Fetch users
+    getUsuario();
+}, []); 
+
+  const getUsuario = () => {
     Axios.get("http://localhost:3001/obteneruser").then((response) => {
         setusuariolista(response.data);
     });
   };
-  listaUsuarios();
+  getUsuario();
+  
+
+    //Obtener lista de personas 
+    const fetchPersonas = async () => {
+        try {
+            const response = await Axios.get("http://localhost:3001/obtenerPersona");
+            setPersonas(response.data);
+        } catch (error) {
+            console.error("Error al obtener personas:", error);
+        }
+    };
+    
+    useEffect(() => {
+        fetchPersonas(); // Llama a la función al montar el componente
+    }, []);
+    
+    //PAGINACION Y BUSQUEDA
+    // Filtrar la lista de usuarios
+    const filteredUsuarios = usuariolista.filter((usuario) => {
+      const empleado = personas.find(p => p.id === usuario.id_persona);
+      const rol = roles.find(r => r.id_rol === usuario.rol_id);
+      const estado = estados.find(e => e.id_estado === usuario.estado_id);
+
+      return (
+          usuario.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (empleado && empleado.primer_nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (rol && rol.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (estado && estado.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+  });
+
+  // Paginación
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredUsuarios.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="container">
+      {/*Aqui va la pagina web o el login */}
       <div className="card text-center">
         <div className="card-header">FORMULARIO CREAR USUARIO</div>
         <div className="card-body">
@@ -187,7 +232,7 @@ const addUser = () => {
             </span>
                 <select value={idPersona} onChange={(e) => setIdPersona(e.target.value)}>
                     <option value="">Seleccione un empleado</option>
-                    {personasSinUsuario.map((persona) => (
+                    {personas.map((persona) => (
                         <option  key={persona.id} value={persona.id}>
                             {persona.primer_nombre}
                         </option>
@@ -226,7 +271,7 @@ const addUser = () => {
             </span>
             <input
             type="text"
-             onChange={(event)=>{
+            onChange={(event)=>{
                 setUsername(event.target.value);
             }} 
             className="form-control"
@@ -239,7 +284,7 @@ const addUser = () => {
               Contraseña:{" "}
             </span>
             <input
-             type="password"
+            type="password"
               onChange={(event)=>{
                 setPassword(event.target.value);
             }}
@@ -265,6 +310,13 @@ const addUser = () => {
           )}
         </div>
       </div>
+      <input
+                type="text"
+                placeholder="Buscar usuario..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-control mb-3"
+            />
       <table className="table table-striped">
         <thead>
           <tr>
@@ -279,10 +331,10 @@ const addUser = () => {
           </tr>
         </thead>
         <tbody>
-          {usuariolista.map((val, key) => {
-               const empleado = personas.find(p => p.id === val.id_persona);
-               const rol = roles.find(r => r.id_rol === val.rol_id);
-               const estado = estados.find(e => e.id_estado === val.estado_id);
+          {currentItems.map((val, key) => {
+            const empleado = personas.find(p => p.id === val.id_persona);
+            const rol = roles.find(r => r.id_rol === val.rol_id);
+            const estado = estados.find(e => e.id_estado === val.estado_id);
             return (
               <tr key={val.id_usuario}>
                 <th>{val.id_usuario}</th>
@@ -307,7 +359,7 @@ const addUser = () => {
                     >
                       Editar
                     </button>
-                   {/*  <button
+                    {/*  <button
                       type="button"
                       onClick={() => {
                         deletepersona(val);
@@ -321,9 +373,22 @@ const addUser = () => {
                 </td>
               </tr>
             );
-          })}
-        </tbody>
+})}        
+          </tbody>
       </table>
+      <ul className="pagination">
+                {pageNumbers.map((number) => (
+                    <li key={number} className="page-item">
+                        <a
+                            href="#!"
+                            className="page-link"
+                            onClick={() => paginate(number)}
+                        >
+                            {number}
+                        </a>
+                    </li>
+                ))}
+            </ul>
     </div>
   );
 }
